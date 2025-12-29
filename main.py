@@ -39,7 +39,7 @@ async def credits(interaction: discord.Interaction):
     creditsembed = discord.Embed(title="Credits")
     creditsembed.add_field(name="Creator", value="yourlunch321")
     creditsembed.add_field(name="Friends who helped me along the way", value="Argon - thank u for server hosting and being a good friend \nthereal - the person who inspired me to learn programming\nalphagolfcharlie - help on the code")
-    await interaction.response.send_message(guild=Guild)
+    await interaction.response.send_message(embed=creditsembed)
 
 @bot.tree.command(name="weather", description="Shows METAR data from an airport")
 async def weather(interaction: discord.Interaction, airport: str):
