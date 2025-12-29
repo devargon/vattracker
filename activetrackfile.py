@@ -92,7 +92,6 @@ def starttrackloop(bot):
                                 specialvatusacallsign = True
                             elif foundartcc.startswith("Y"):
                                 # its australia
-                                print("im downunder in auzzie")
                                 australiasectors =  await parseaustraliasectors.parseaustraliasectors()
                                 vatpaccallsign = True
                             for onlineatc in vatsimdata["controllers"]:
@@ -161,5 +160,6 @@ def starttrackloop(bot):
     # if artcc["name"] == "KZOB":
         # if point.within(artcc["polygon"]):
             # print("this works")
+
 
 # legendary moment preserved for history
