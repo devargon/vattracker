@@ -37,8 +37,8 @@ async def on_ready():
 @bot.tree.command(name="credits", description="Who built and supported this bot")
 async def credits(interaction: discord.Interaction):
     creditsembed = discord.Embed(title="Credits")
-    creditsembed.add_field(name="Creator", value="yourlunch321")
-    creditsembed.add_field(name="Friends who helped me along the way", value="Argon - thank u for server hosting and being a good friend \nthereal - the person who inspired me to learn programming\nalphagolfcharlie - help on the code")
+    creditsembed.add_field(name="Creator", value="yourlunch321", inline=False)
+    creditsembed.add_field(name="Friends who helped me along the way", value="**Argon** - thank u for server hosting and being a good friend \n**thereal** - the person who inspired me to learn programming\n**alphagolfcharlie** - help on the code")
     await interaction.response.send_message(embed=creditsembed)
 
 @bot.tree.command(name="weather", description="Shows METAR data from an airport")
