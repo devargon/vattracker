@@ -1,0 +1,165 @@
+import discord
+from discord import app_commands
+from discord.ext import commands
+from shapely.geometry import shape, Point
+import json
+from discord.ext import tasks
+import requests
+import parseaustraliasectors
+
+guildid = 1397781715879071894
+Guild = discord.Object(id=guildid)
+
+artccpolygons = []
+
+with open("Boundaries.geojson", "r") as file:
+    boundariesraw = json.load(file)
+with open ("icaotoartccfir.json", "r") as file:
+    icaotoartcc = json.load(file)
+
+for features in boundariesraw["features"]:
+    artccpolygons.append({"name": features["properties"]["id"], "polygon": shape(features["geometry"])})
+
+def activetrackcommand(bot):
+    # run this in main.py so command gets ran
+
+    @bot.tree.command(name="activetrack", description="Tracks your aircraft on the network, and DMs you if entering an active ARTCC/FIR")
+    async def activetrack(interaction: discord.Interaction, callsign: str):
+        with open("currenttracks.json", "r") as file:
+            currenttracks = json.load(file)
+        currenttracks[callsign.upper()] = {
+            "discord_channel": interaction.channel_id,
+            "user_id": interaction.user.id,
+            "pinged_artccs": []
+        }
+        with open("currenttracks.json", "w") as file:
+            json.dump(currenttracks, file, indent=4)
+        trackingbegunembed = discord.Embed(title=f"Begun tracking for {callsign.upper()}")
+        await interaction.response.send_message(embed=trackingbegunembed)
+
+    @bot.tree.command(name="removeactivetrack", description="Removes activetrack from an aircraft")
+    async def removeactivetrack(interaction: discord.Interaction, callsign: str):
+        aircraftexist = False
+        with open("currenttracks.json", "r") as file:
+            tracks = json.load(file)
+            tracks_copy = tracks.copy()
+        userid = interaction.user.id
+        if tracks[callsign.upper()]["user_id"] == userid:
+            aircraftexist = True
+        if aircraftexist == True:
+            del tracks_copy[callsign.upper()]
+            deletionembed = discord.Embed(title=f"Tracking stopped for **{callsign.upper()}**")
+            await interaction.response.send_message(embed=deletionembed)
+            with open("currenttracks.json", "w") as file:
+                json.dump(tracks_copy, file)
+        else:
+            failembed = discord.Embed(title=f"You are not the person who intiated the track for **{callsign.upper()}**, or no track was initiated in the first place.")
+            await interaction.response.send_message(embed=failembed)
+
+
+def starttrackloop(bot):
+    @tasks.loop(seconds=10)
+    async def trackloop():
+        with open("currenttracks.json", "r") as file:
+            tracksdata = json.load(file)
+        
+        vatsimdata = requests.get("https://data.vatsim.net/v3/vatsim-data.json").json()
+
+        for callsign, track in tracksdata.items():
+            # always do TWO variables after "for" for any dictionaries, and put .items() - the first variable is the DICTIONARY KEY
+            foundtrack = False
+            specialvatusacallsign = False
+            vatpaccallsign = False
+            
+            for pilots in vatsimdata["pilots"]:
+                if callsign == pilots["callsign"]:
+                    foundtrack = pilots
+                    break
+            if foundtrack:
+                latitude = foundtrack["latitude"]
+                longitude = foundtrack["longitude"]
+                point = Point(longitude, latitude)
+                for polygon in artccpolygons:
+                    if point.within(polygon["polygon"]):
+                        foundartcc = polygon["name"]
+                        if foundartcc[:4] in track["pinged_artccs"]:
+                            break
+                            # stop program as ARTCC/FIR has been pinged already
+                        else:
+                            if foundartcc.startswith("K"):
+                                # its america
+                                diffvatsimcentercallsign = icaotoartcc["america"][foundartcc][0]["identifier"]
+                                specialvatusacallsign = True
+                            elif foundartcc.startswith("Y"):
+                                # its australia
+                                print("im downunder in auzzie")
+                                australiasectors =  await parseaustraliasectors.parseaustraliasectors()
+                                vatpaccallsign = True
+                            for onlineatc in vatsimdata["controllers"]:
+                                
+                                if specialvatusacallsign == True:
+                                    atccallsign = onlineatc["callsign"]
+                                    parsedcallsign = atccallsign[:3] + atccallsign[-4:]
+                                    if diffvatsimcentercallsign == parsedcallsign:
+                                        # i get the data about the pilot and send a DM
+                                        userid = await bot.fetch_user(track["user_id"])
+                                        message = f"<@{userid.id}>, your flight **{callsign}** is entering {onlineatc["callsign"]}."
+                                        await userid.send(message)
+                                        tracksdata[callsign]["pinged_artccs"].append(foundartcc)
+                                        with open("currenttracks.json", "w") as file:
+                                            json.dump(tracksdata, file)
+                                        return
+                                    
+                                elif vatpaccallsign == True:
+                                    # i get the data about the pilot and send a DM
+                                    # once i get the list from here, i run for X in list, then check if the artcc is in that found list with regex
+                                    auzziecallsign = onlineatc["callsign"]
+                                    for sector in australiasectors:
+                                        if sector == foundartcc[1:4]:
+                                            userid = await bot.fetch_user(track["user_id"])
+                                            message = f"<@{userid.id}>, your flight **{callsign}** is entering {foundartcc}."
+                                            await userid.send(message)
+                                            tracksdata[callsign]["pinged_artccs"].append(foundartcc)
+                                            with open("currenttracks.json", "w") as file:
+                                                json.dump(tracksdata, file)
+                                            return
+
+                                elif specialvatusacallsign == False and vatpaccallsign == False:
+                                    if onlineatc["callsign"].startswith(foundartcc[:4]) and onlineatc["callsign"].endswith("_CTR"):
+                                        # i get the data about the pilot and send a DM
+                                        userid = await bot.fetch_user(track["user_id"])
+                                        message = f"<@{userid.id}>, your flight **{callsign}** is entering {onlineatc["callsign"]}."
+                                        await userid.send(message)
+                                        tracksdata[callsign]["pinged_artccs"].append(foundartcc)
+                                        with open("currenttracks.json", "w") as file:
+                                            json.dump(tracksdata, file)
+                                        return
+
+    @tasks.loop(seconds=30)
+    async def deletionloop():
+        vatsimdata = requests.get("https://data.vatsim.net/v3/vatsim-data.json").json()
+        with open("currenttracks.json", "r") as file:
+            trackdata = json.load(file)
+            trackdata_copy = trackdata.copy()
+        for aircraft, items in trackdata.items():
+            still_online = False
+            for callsign in vatsimdata["pilots"]:
+                aircraftcallsign = callsign["callsign"]
+                if aircraft == aircraftcallsign:
+                    still_online = True
+            if still_online == False:
+                del trackdata_copy[aircraft]
+            with open("currenttracks.json", "w") as file:
+                json.dump(trackdata_copy, file)
+
+    trackloop.start()
+    deletionloop.start()
+
+# point = Point(-79.10762, 42.04464)
+
+# for artcc in artccpolygons:
+    # if artcc["name"] == "KZOB":
+        # if point.within(artcc["polygon"]):
+            # print("this works")
+
+# legendary moment preserved for history
