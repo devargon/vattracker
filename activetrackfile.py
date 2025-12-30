@@ -109,7 +109,7 @@ def starttrackloop(bot):
                                 # its australia
                                 australiasectors =  await parseaustraliasectors.parseaustraliasectors()
                                 vatpaccallsign = True
-                            elif foundartcc.startswith("EGTT"):
+                            elif foundartcc.startswith("EGTT-"):
                                 # its LONDON control
                                 londoncallsignstr = icaotoartcc["london"][foundartcc]["identifier"]
                                 londoncallsign = True
