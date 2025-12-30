@@ -27,15 +27,15 @@ def activetrackcommand(bot):
     async def activetrack(interaction: discord.Interaction, callsign: str):
         with open("currenttracks.json", "r") as file:
             currenttracks = json.load(file)
+        trackingbegunembed = discord.Embed(title=f"Begun tracking for {callsign.upper()}")
+        await interaction.response.send_message(embed=trackingbegunembed)
         currenttracks[callsign.upper()] = {
             "discord_channel": interaction.channel_id,
             "user_id": interaction.user.id,
             "pinged_artccs": []
         }
         with open("currenttracks.json", "w") as file:
-            json.dump(currenttracks, file, indent=4)
-        trackingbegunembed = discord.Embed(title=f"Begun tracking for {callsign.upper()}")
-        await interaction.response.send_message(embed=trackingbegunembed)
+            json.dump(currenttracks, file, indent=4)        
 
     @bot.tree.command(name="removeactivetrack", description="Removes activetrack from an aircraft")
     async def removeactivetrack(interaction: discord.Interaction, callsign: str):
