@@ -111,7 +111,7 @@ def starttrackloop(bot):
                                 vatpaccallsign = True
                             elif foundartcc.startswith("EGTT"):
                                 # its LONDON control
-                                londoncallsign = icaotoartcc["london"][foundartcc]["identifier"]
+                                londoncallsignstr = icaotoartcc["london"][foundartcc]["identifier"]
                                 londoncallsign = True
                             # check if they're in an asian FIR
                             for fir in icaotoartcc["specialasia"]:
@@ -145,7 +145,7 @@ def starttrackloop(bot):
 
 
                                 elif londoncallsign == True:
-                                    if onlineatc["callsign"] == londoncallsign:
+                                    if onlineatc["callsign"] == londoncallsignstr:
                                         userid = await bot.fetch_user(track["user_id"])
                                         message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** - {icaotoartcc["london"][foundartcc]["callsign"]}."
                                         await userid.send(message)
