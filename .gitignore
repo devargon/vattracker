@@ -1,4 +1,5 @@
 .env.dev
+.env
 discord.log
 __pycache__
 .gitignoregi
