@@ -9,7 +9,7 @@ from discord import app_commands
 from typing import Optional
 import activetrackfile
 
-load_dotenv()
+load_dotenv(".env.dev")
 token = os.getenv("DISCORD_TOKEN")
 ownerrole = "owner"
 guildid = 1397781715879071894
@@ -41,7 +41,7 @@ async def credits(interaction: discord.Interaction):
     creditsembed.add_field(name="Friends who helped me along the way", value="**Argon** - thank u for server hosting and being a good friend \n**thereal** - the person who inspired me to learn programming\n**alphagolfcharlie** - help on the code")
     await interaction.response.send_message(embed=creditsembed)
 
-@bot.tree.command(name="weather", description="Shows METAR data from an airport")
+@bot.tree.command(name="weather", description="Shows METAR data from an airport", guild=Guild)
 async def weather(interaction: discord.Interaction, airport: str):
     weatherwebsite = (f"https://aviationweather.gov/api/data/metar?ids={airport.upper()}&format=json")
     weatherdataraw = requests.get(weatherwebsite)
@@ -171,7 +171,7 @@ async def aircraftinfo(interaction: discord.Interaction, callsign:Optional[str] 
                 )
                 await interaction.response.send_message(embed=noaicraftembedcid)
 
-@bot.tree.command(name="arrivalboard", description="Show arrivals at an airport")
+@bot.tree.command(name="arrivalboard", description="Show arrivals at an airport",guild=Guild)
 async def arrivalboard(interaction: discord.Interaction, airport: str):
     arrivalcounter = 0
     if len(airport) > 4 or len(airport) < 4:
@@ -256,12 +256,14 @@ async def arrivalboard(interaction: discord.Interaction, airport: str):
                 break
 
         if arrivals:
+            await interaction.response.send_message(embed=embed)
+
             if arrivalcounter >= 24:
-                await interaction.response.send_message(embed=embed)
-            if arrivalcounter >= 48:
                 await interaction.followup.send(embed=embed2)
-            if arrivalcounter >= 72:
+            if arrivalcounter >= 48:
                 await interaction.followup.send(embed=embed3)
+            if arrivalcounter >= 72:
+                await interaction.followup.send(embed=embed4)
             if arrivalcounter >= 96:
                 unshownarrivals = len(arrivals) - arrivalcounter
                 embed4.set_footer(text=f"{unshownarrivals} remaining flights are not shown - Page 4")
