@@ -35,7 +35,7 @@ def activetrackcommand(bot):
             "pinged_artccs": []
         }
         with open("currenttracks.json", "w") as file:
-            json.dump(currenttracks, file, indent=4)        
+            json.dump(currenttracks, file, indent=4)      
 
     @bot.tree.command(name="removeactivetrack", description="Removes activetrack from an aircraft")
     async def removeactivetrack(interaction: discord.Interaction, callsign: str):
@@ -93,7 +93,7 @@ def starttrackloop(bot):
                                 # its america
                                 if foundartcc == "KZNY":
                                     # its new york i have to see if its new york center or radio
-                                    if artccpolygons[foundartcc]["oceanic"] == "1":                                        
+                                    if polygon["oceanic"] == "1":                                        
                                         #checking if its NEW YORK OCEANIC
                                         newyorkoceanic = True
                                     else:
