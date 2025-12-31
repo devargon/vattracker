@@ -210,7 +210,7 @@ def starttrackloop(bot):
                                     if onlineatc["callsign"].startswith(foundartcc[:4]) and onlineatc["callsign"].endswith("_CTR"):
                                         # i get the data about the pilot and send a DM
                                         userid = await bot.fetch_user(track["user_id"])
-                                        message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** - {icaotoartcc["shanwickgander"][foundartcc]["callsign"]}."
+                                        message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}**."
                                         await userid.send(message)
                                         artccappend = foundartcc[:4] 
                                         tracksdata[callsign]["pinged_artccs"].append(artccappend)
