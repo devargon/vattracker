@@ -88,7 +88,7 @@ def starttrackloop(bot):
                     if point.within(polygon["polygon"]):
                         foundartcc = polygon["name"]
                         if foundartcc[:4] in track["pinged_artccs"]:
-                            return
+                            break
                             # stop program as ARTCC/FIR has been pinged already
                         else:
                             if foundartcc.startswith("K"):
