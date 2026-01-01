@@ -25,10 +25,10 @@ def activetrackcommand(bot):
 
     @bot.tree.command(name="activetrack", description="Tracks your aircraft on the network, and DMs you if entering an active ARTCC/FIR")
     async def activetrack(interaction: discord.Interaction, callsign: str):
+        import os
+        print("CWD:", os.getcwd())
         with open("currenttracks.json", "r") as file:
             currenttracks = json.load(file)
-        trackingbegunembed = discord.Embed(title=f"Begun tracking for {callsign.upper()}")
-        await interaction.response.send_message(embed=trackingbegunembed)
         currenttracks[callsign.upper()] = {
             "discord_channel": interaction.channel_id,
             "user_id": interaction.user.id,
@@ -36,6 +36,8 @@ def activetrackcommand(bot):
         }
         with open("currenttracks.json", "w") as file:
             json.dump(currenttracks, file, indent=4)      
+        trackingbegunembed = discord.Embed(title=f"Begun tracking for {callsign.upper()}")
+        await interaction.response.send_message(embed=trackingbegunembed)
 
     @bot.tree.command(name="removeactivetrack", description="Removes activetrack from an aircraft")
     async def removeactivetrack(interaction: discord.Interaction, callsign: str):
@@ -74,6 +76,7 @@ def starttrackloop(bot):
             vatpaccallsign = False
             isshanwickganderoceanic = False
             newyorkoceanic = False
+            iscanada = False
 
             for pilots in vatsimdata["pilots"]:
                 if callsign == pilots["callsign"]:
@@ -117,7 +120,9 @@ def starttrackloop(bot):
                                 londoncallsign = True
                             elif foundartcc == "EGGX" or foundartcc == "CZQO":
                                 isshanwickganderoceanic = True
-                                print(foundartcc)
+                            elif foundartcc == "CZYZ":
+                                # its czyz rn cuz to my knowledge other canadian FIRs use XXXX_CTR
+                                iscanada = True
 
                             # check if they're in an asian FIR as they start with different stuff
                             for fir in icaotoartcc["specialasia"]:
@@ -204,6 +209,20 @@ def starttrackloop(bot):
                                         with open("currenttracks.json", "w") as file:
                                             json.dump(tracksdata, file)
                                         return
+                                    
+                                elif iscanada == True:
+                                    foundartcc = foundartcc[:4]
+                                    atccallsign = onlineatc["callsign"]
+                                    parsedcallsign = atccallsign[:3] + atccallsign[-4:]                                    
+                                    if icaotoartcc["canada"][foundartcc]["identifier"] == parsedcallsign:
+                                        userid = await bot.fetch_user(track["user_id"])
+                                        message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** - {icaotoartcc["canada"][foundartcc]["callsign"]}."
+                                        await userid.send(message)
+                                        artccappend = foundartcc[:4] 
+                                        tracksdata[callsign]["pinged_artccs"].append(artccappend)
+                                        with open("currenttracks.json", "w") as file:
+                                            json.dump(tracksdata, file)
+                                        return                                        
 
                                 else:
                                     # if its a ARTCC/FIR starting with its ICAOdesignator and doesnt fulfill any special conditions

@@ -91,7 +91,10 @@
     "shanwickgander": {
         "EGGX": {"identifier": "NAT_FSS", "callsign": "Shanwick Radio"},
         "CZQO": {"identifier": "NAT_FSS", "callsign": "Gander Radio"}
-    }  
+    },
+    "canada": {
+        "CZYZ": {"identifier": "TOR_CTR", "callsign": "Toronto Center"}
+    }
 }
 
 
