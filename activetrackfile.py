@@ -122,16 +122,15 @@ def starttrackloop(bot):
                                     # its czyz rn cuz to my knowledge other canadian FIRs use XXXX_CTR
                                     iscanada = True
                                 # check if they're in an asian FIR as they start with different stuff
-                                for fir in icaotoartcc["specialasia"]:
-                                    if foundartcc[:4] == fir:
-                                        asiancallsign = True
+                                elif foundartcc[:4] in icaotoartcc["specialasia"]:
+                                    asiancallsign = True
                                 
                                 for onlineatc in vatsimdata["controllers"]:
 
                                     if vatusa_callsign == True:
                                             atccallsign = onlineatc["callsign"]
                                             parsedcallsign = atccallsign[:3] + atccallsign[-4:]
-                                            if vatusa_CTR_callsign == parsed_center_callsign:
+                                            if vatusa_CTR_callsign == parsedcallsign:
                                                 controller_counter = 0
                                                 for controller in vatsimdata["controllers"]:
                                                     if parsedcallsign == vatusa_CTR_callsign:
@@ -139,7 +138,7 @@ def starttrackloop(bot):
                                                 if controller_counter == 1:
                                                     message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** ({onlineatc["frequency"]})."
                                                 else:
-                                                    message = f"<@{userid.id}>, your flight **{callsign}** is entering **{parsed_center_callsign}**."
+                                                    message = f"<@{userid.id}>, your flight **{callsign}** is entering **{parsedcallsign}**."
                                                 # i get the data about the pilot and send a DM
                                                 await userid.send(message)
                                                 artccappend = foundartcc[:4]
@@ -199,15 +198,25 @@ def starttrackloop(bot):
                                         foundartcc = foundartcc[:4]
                                         atccallsign = onlineatc["callsign"]
                                         parsedcallsign = atccallsign[:3] + atccallsign[-4:]
+                                        asian_CTR_callsign = icaotoartcc["specialasia"][foundartcc]["identifier"]
                                         # makes it easier to hunt the icaotoartcc dict
-                                        if icaotoartcc["specialasia"][foundartcc]["identifier"] == parsedcallsign:
-                                            message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** - {icaotoartcc["specialasia"][foundartcc]["callsign"]}."
+                                        if asian_CTR_callsign == parsedcallsign:
+                                            controller_counter = 0
+                                            for controller in vatsimdata["controllers"]:
+                                                parsed_callsign_AL = controller["callsign"][:3] + controller["callsign"][-4:]
+                                                if asian_CTR_callsign == parsed_callsign_AL:
+                                                    controller_counter += 1
+                                            if controller_counter == 1:
+                                                message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** ({onlineatc["frequency"]})."
+                                            else:
+                                                message = f"<@{userid.id}>, your flight **{callsign}** is entering **{asian_CTR_callsign}**."
+                                            # i get the data about the pilot and send a DM
                                             await userid.send(message)
                                             artccappend = foundartcc[:4]
                                             tracksdata[callsign]["pinged_artccs"].append(artccappend)
                                             with open("currenttracks.json", "w") as file:
                                                 json.dump(tracksdata, file)
-                                            return                                        
+                                            return                                                             
 
                                     elif isshanwickganderoceanic == True:
                                         if icaotoartcc["shanwickgander"][foundartcc]["identifier"] == onlineatc["callsign"]:
