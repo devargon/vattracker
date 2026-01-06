@@ -78,6 +78,8 @@ def starttrackloop(bot):
                 iscanada = False
                 is_scottishcontrol = False
 
+                userid = await bot.fetch_user(track["user_id"])
+
                 for pilots in vatsimdata["pilots"]:
                     if callsign == pilots["callsign"]:
                         foundtrack = pilots
@@ -100,14 +102,14 @@ def starttrackloop(bot):
                                         newyorkoceanic = True
                                     else:
                                         foundartcc = foundartcc[:4]
-                                        diffvatusacentercallsign = icaotoartcc["america"][foundartcc][0]["identifier"]
+                                        vatusa_CTR_callsign = icaotoartcc["america"][foundartcc][0]["identifier"]
                                         vatusa_callsign = True
 
                                 elif foundartcc.startswith("Y"):
                                     # its australia
                                     australiasectors =  await parseaustraliasectors.parseaustraliasectors()
                                     vatpaccallsign = True
-                                elif foundartcc.startswith("EGTT-"):
+                                elif foundartcc.startswith("EGTT"):
                                     # its LONDON control
                                     londoncallsignstr = icaotoartcc["london"][foundartcc]["identifier"]
                                     londoncallsign = True
@@ -125,24 +127,29 @@ def starttrackloop(bot):
                                         asiancallsign = True
                                 
                                 for onlineatc in vatsimdata["controllers"]:
-                                    
+
                                     if vatusa_callsign == True:
-                                        atccallsign = onlineatc["callsign"]
-                                        parsedcallsign = atccallsign[:3] + atccallsign[-4:]
-                                        if diffvatusacentercallsign == parsedcallsign:
-                                            # i get the data about the pilot and send a DM
-                                            userid = await bot.fetch_user(track["user_id"])
-                                            message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** - {icaotoartcc["america"][foundartcc][0]["callsign"]}."
-                                            await userid.send(message)
-                                            artccappend = foundartcc[:4]
-                                            tracksdata[callsign]["pinged_artccs"].append(artccappend)
-                                            with open("currenttracks.json", "w") as file:
-                                                json.dump(tracksdata, file)
-                                            return
+                                            atccallsign = onlineatc["callsign"]
+                                            parsedcallsign = atccallsign[:3] + atccallsign[-4:]
+                                            if vatusa_CTR_callsign == parsed_center_callsign:
+                                                controller_counter = 0
+                                                for controller in vatsimdata["controllers"]:
+                                                    if parsedcallsign == vatusa_CTR_callsign:
+                                                        controller_counter += 1
+                                                if controller_counter == 1:
+                                                    message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** ({onlineatc["frequency"]})."
+                                                else:
+                                                    message = f"<@{userid.id}>, your flight **{callsign}** is entering **{parsed_center_callsign}**."
+                                                # i get the data about the pilot and send a DM
+                                                await userid.send(message)
+                                                artccappend = foundartcc[:4]
+                                                tracksdata[callsign]["pinged_artccs"].append(artccappend)
+                                                with open("currenttracks.json", "w") as file:
+                                                    json.dump(tracksdata, file)
+                                                return
                                     
                                     elif newyorkoceanic == True:
                                         if onlineatc["callsign"] == "NY_CL_FSS":
-                                            userid = await bot.fetch_user(track["user_id"])
                                             message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** - New York Oceanic Radio."
                                             await userid.send(message)
                                             artccappend = foundartcc[:4]
@@ -153,8 +160,8 @@ def starttrackloop(bot):
 
                                     elif londoncallsign == True:
                                         if onlineatc["callsign"] == londoncallsignstr:
-                                            userid = await bot.fetch_user(track["user_id"])
-                                            message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** - {icaotoartcc["london"][foundartcc]["callsign"]}."
+                                            # i do not need the whole "how many controllers per sector" there is, because this inherently tracks split sectors of london, which can only 1 have controller
+                                            message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** - {icaotoartcc["london"][foundartcc]["callsign"]} ({onlineatc["frequency"]})."
                                             await userid.send(message)
                                             artccappend = foundartcc[:4]
                                             tracksdata[callsign]["pinged_artccs"].append(artccappend)
@@ -164,8 +171,9 @@ def starttrackloop(bot):
                                                                             
                                     elif is_scottishcontrol == True:
                                         if onlineatc["callsign"] == icaotoartcc["scottish"][foundartcc]["identifier"]:
-                                            userid = await bot.fetch_user(track["user_id"])
-                                            message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** - {icaotoartcc["scottish"][foundartcc]["callsign"]}."
+                                            # since EGPX is a seperate thingy in boundaries.geojson, again no need for sector controllers because its inherently a sector, and it will still work if scottish opens as one
+                                            # as it goes through each one and each identifier callsign
+                                            message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** - {icaotoartcc["scottish"][foundartcc]["callsign"]} ({onlineatc["frequency"]})."
                                             await userid.send(message)
                                             artccappend = foundartcc[:4]
                                             tracksdata[callsign]["pinged_artccs"].append(artccappend)
@@ -179,7 +187,6 @@ def starttrackloop(bot):
                                         # i dont use onlineatc here, as i have a seperate .py file which gives ALL sectors in australia
                                         for sector in australiasectors:
                                             if sector == foundartcc[1:4]:
-                                                userid = await bot.fetch_user(track["user_id"])
                                                 message = f"<@{userid.id}>, your flight **{callsign}** is entering **{foundartcc}**."
                                                 await userid.send(message)
                                                 artccappend = foundartcc[:4] 
@@ -194,7 +201,6 @@ def starttrackloop(bot):
                                         parsedcallsign = atccallsign[:3] + atccallsign[-4:]
                                         # makes it easier to hunt the icaotoartcc dict
                                         if icaotoartcc["specialasia"][foundartcc]["identifier"] == parsedcallsign:
-                                            userid = await bot.fetch_user(track["user_id"])
                                             message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** - {icaotoartcc["specialasia"][foundartcc]["callsign"]}."
                                             await userid.send(message)
                                             artccappend = foundartcc[:4]
@@ -205,7 +211,6 @@ def starttrackloop(bot):
 
                                     elif isshanwickganderoceanic == True:
                                         if icaotoartcc["shanwickgander"][foundartcc]["identifier"] == onlineatc["callsign"]:
-                                            userid = await bot.fetch_user(track["user_id"])
                                             message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** - {icaotoartcc["shanwickgander"][foundartcc]["callsign"]}."
                                             await userid.send(message)
                                             artccappend = foundartcc[:4] 
@@ -219,7 +224,6 @@ def starttrackloop(bot):
                                         atccallsign = onlineatc["callsign"]
                                         parsedcallsign = atccallsign[:3] + atccallsign[-4:]                                    
                                         if icaotoartcc["canada"][foundartcc]["identifier"] == parsedcallsign:
-                                            userid = await bot.fetch_user(track["user_id"])
                                             message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** - {icaotoartcc["canada"][foundartcc]["callsign"]}."
                                             await userid.send(message)
                                             artccappend = foundartcc[:4] 
@@ -231,9 +235,17 @@ def starttrackloop(bot):
                                     else:
                                         # if its a ARTCC/FIR starting with its ICAOdesignator and doesnt fulfill any special conditions
                                         if onlineatc["callsign"].startswith(foundartcc[:4]) and onlineatc["callsign"].endswith("_CTR"):
-                                            # i get the data about the pilot and send a DM
-                                            userid = await bot.fetch_user(track["user_id"])
-                                            message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}**."
+                                            # loop through vatsimdata to see how many controllers are online in 1 ARTCC/FIR - if theres more than one, the bot cannot get the correct frequency 100%, which is pretty bad
+                                            controller_counter = 0
+                                            for controller in vatsimdata["controllers"]:
+                                                if (controller["callsign"][:4]) == foundartcc[:4]:
+                                                    controller_counter += 1
+                                            if controller_counter == 1:
+                                                message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** ({onlineatc["frequency"]})."
+                                            else:
+                                                parsed_center_callsign = (onlineatc["callsign"][:4]) + "_CTR"
+                                                message = f"<@{userid.id}>, your flight **{callsign}** is entering **{parsed_center_callsign}**."
+                                            # i get the data about the pilot and send a DM           
                                             await userid.send(message)
                                             artccappend = foundartcc[:4] 
                                             tracksdata[callsign]["pinged_artccs"].append(artccappend)
