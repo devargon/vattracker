@@ -129,11 +129,12 @@ def starttrackloop(bot):
 
                                     if vatusa_callsign == True:
                                             atccallsign = onlineatc["callsign"]
-                                            parsedcallsign = atccallsign[:3] + atccallsign[-4:]
+                                            parsedcallsign = atccallsign[:3] + atccallsign[-4:] # this is the onlineatc
                                             if vatusa_CTR_callsign == parsedcallsign:
                                                 controller_counter = 0
                                                 for controller in vatsimdata["controllers"]:
-                                                    if parsedcallsign == vatusa_CTR_callsign:
+                                                    parsed_callsign_americaloop = controller["callsign"][:3] + controller["callsign"][-4:]
+                                                    if vatusa_CTR_callsign == parsed_callsign_americaloop:
                                                         controller_counter += 1
                                                 if controller_counter == 1:
                                                     message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** ({onlineatc["frequency"]})."
