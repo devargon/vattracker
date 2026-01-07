@@ -6,6 +6,7 @@ import json
 from discord.ext import tasks
 import requests
 import parseaustraliasectors
+import aiohttp
 
 guildid = 1397781715879071894
 Guild = discord.Object(id=guildid)
@@ -131,15 +132,7 @@ def starttrackloop(bot):
                                             atccallsign = onlineatc["callsign"]
                                             parsedcallsign = atccallsign[:3] + atccallsign[-4:] # this is the onlineatc
                                             if vatusa_CTR_callsign == parsedcallsign:
-                                                controller_counter = 0
-                                                for controller in vatsimdata["controllers"]:
-                                                    parsed_callsign_americaloop = controller["callsign"][:3] + controller["callsign"][-4:]
-                                                    if vatusa_CTR_callsign == parsed_callsign_americaloop:
-                                                        controller_counter += 1
-                                                if controller_counter == 1:
-                                                    message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** ({onlineatc["frequency"]})."
-                                                else:
-                                                    message = f"<@{userid.id}>, your flight **{callsign}** is entering **{parsedcallsign}**."
+                                                message = await controller_counter_function(vatusa_CTR_callsign, callsign, onlineatc, userid, False)
                                                 # i get the data about the pilot and send a DM
                                                 await userid.send(message)
                                                 artccappend = foundartcc[:4]
@@ -202,16 +195,7 @@ def starttrackloop(bot):
                                         asian_CTR_callsign = icaotoartcc["specialasia"][foundartcc]["identifier"]
                                         # makes it easier to hunt the icaotoartcc dict
                                         if asian_CTR_callsign == parsedcallsign:
-                                            controller_counter = 0
-                                            for controller in vatsimdata["controllers"]:
-                                                parsed_callsign_AL = controller["callsign"][:3] + controller["callsign"][-4:]
-                                                if asian_CTR_callsign == parsed_callsign_AL:
-                                                    controller_counter += 1
-                                            if controller_counter == 1:
-                                                message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** ({onlineatc["frequency"]})."
-                                            else:
-                                                message = f"<@{userid.id}>, your flight **{callsign}** is entering **{asian_CTR_callsign}**."
-                                            # i get the data about the pilot and send a DM
+                                            message = await controller_counter_function(asian_CTR_callsign, callsign, onlineatc, userid, False)
                                             await userid.send(message)
                                             artccappend = foundartcc[:4]
                                             tracksdata[callsign]["pinged_artccs"].append(artccappend)
@@ -246,16 +230,8 @@ def starttrackloop(bot):
                                         # if its a ARTCC/FIR starting with its ICAOdesignator and doesnt fulfill any special conditions
                                         if onlineatc["callsign"].startswith(foundartcc[:4]) and onlineatc["callsign"].endswith("_CTR"):
                                             # loop through vatsimdata to see how many controllers are online in 1 ARTCC/FIR - if theres more than one, the bot cannot get the correct frequency 100%, which is pretty bad
-                                            controller_counter = 0
-                                            for controller in vatsimdata["controllers"]:
-                                                if (controller["callsign"][:4]) == foundartcc[:4]:
-                                                    controller_counter += 1
-                                            if controller_counter == 1:
-                                                message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** ({onlineatc["frequency"]})."
-                                            else:
-                                                parsed_center_callsign = (onlineatc["callsign"][:4]) + "_CTR"
-                                                message = f"<@{userid.id}>, your flight **{callsign}** is entering **{parsed_center_callsign}**."
-                                            # i get the data about the pilot and send a DM           
+                                            center_callsign = foundartcc[:4] + "_CTR"
+                                            message = await controller_counter_function(center_callsign, callsign, onlineatc, userid, True) 
                                             await userid.send(message)
                                             artccappend = foundartcc[:4] 
                                             tracksdata[callsign]["pinged_artccs"].append(artccappend)
@@ -267,6 +243,24 @@ def starttrackloop(bot):
                 traceback.print_exc()
                 print(f"oop i broke {callsign, None}, {foundartcc, None}, {e}")
                 continue
+
+    async def controller_counter_function(CTR_callsign, callsign, atc, id, is_4letterICAO): # callsign and onlineatc are input here as accepted data
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://data.vatsim.net/v3/vatsim-data.json") as rawdata:
+                vatsimdata = await rawdata.json()
+        controller_counter = 0
+        for controller in vatsimdata["controllers"]:
+            if is_4letterICAO == True:
+                parsed_callsign_loop = controller["callsign"][:4] + "_CTR"
+            else:
+                parsed_callsign_loop = controller["callsign"][:3] + controller["callsign"][-4:]
+            if CTR_callsign == parsed_callsign_loop:
+                controller_counter += 1
+        if controller_counter == 1:
+            DM_message = f"<@{id.id}>, your flight **{callsign}** is entering **{atc["callsign"]}** ({atc["frequency"]})."
+        else:
+            DM_message = f"<@{id.id}>, your flight **{callsign}** is entering **{CTR_callsign}**."
+        return DM_message
 
     @tasks.loop(seconds=30)
     async def deletionloop():
