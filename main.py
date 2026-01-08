@@ -71,12 +71,17 @@ async def weather(interaction: discord.Interaction, airport: str):
 
         #clouds
         cloudembedvalue = ""
-        for clouds in weatherdata["clouds"]:
-            cloudcover = clouds["cover"]
-            cloudbase = clouds["base"]
-            cloudembedvalue += f"{cloudcover} at {cloudbase}ft, "
-        cloudembedvalue[:-2]
-        weatherembed.add_field(name="Clouds", value=cloudembedvalue, inline=False)
+        clouds_check = weatherdata.get("clouds", None)
+        clouds_check_length = len(clouds_check)
+        if clouds_check_length == 0:
+            weatherembed.add_field(name="Clouds", value="No Clouds", inline=False)
+        else:
+            for clouds in weatherdata["clouds"]:
+                cloudcover = clouds["cover"]
+                cloudbase = clouds["base"]
+                cloudembedvalue += f"{cloudcover} at {cloudbase}ft, "
+            cloudembedvalue[:-2]
+            weatherembed.add_field(name="Clouds", value=cloudembedvalue, inline=False)
 
         # inhg altimeter math
         inhgaltimeterunrounded = weatherdata["altim"] * 0.029529983071445
