@@ -271,7 +271,6 @@ def starttrackloop(bot):
         for aircraft, items in trackdata.items():
             still_online = False
             for callsign in vatsimdata["pilots"]:
-
                 aircraftcallsign = callsign["callsign"]
                 if aircraft == aircraftcallsign:
                     still_online = True
