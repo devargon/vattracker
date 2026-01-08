@@ -172,6 +172,7 @@ async def aircraftinfo(interaction: discord.Interaction, callsign:Optional[str] 
 
 @bot.tree.command(name="arrivalboard", description="Show arrivals at an airport")
 async def arrivalboard(interaction: discord.Interaction, airport: str):
+    airport = airport.upper()
     arrivalcounter = 0
     if len(airport) > 4 or len(airport) < 4:
 
@@ -282,6 +283,7 @@ async def arrivalboard(interaction: discord.Interaction, airport: str):
 @bot.tree.command(name="departureboard", description="Show current VATSIM departures from an airport")
 @app_commands.describe(airport="4-letter ICAO code")
 async def departureboard(interaction: discord.Interaction, airport: str):
+    airport = airport.upper()
     departurecounter = 0
 
     if len(airport) != 4:
