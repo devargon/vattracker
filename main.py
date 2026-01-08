@@ -11,6 +11,7 @@ import activetrackfile
 
 load_dotenv(".env")
 token = os.getenv("DISCORD_TOKEN")
+channel_id = int(os.getenv("CHANNEL_ID"))
 # guildid = os.getenv("guildid") - use it if you need to test commands with guilds
 
 logging.basicConfig(filename="discord.log",filemode="w", level=logging.ERROR)
@@ -24,7 +25,6 @@ activetrackfile.activetrackcommand(bot)
 @bot.event
 async def on_ready():
     print(f"VatTracker is ready to operate!")
-    channel_id = 1397850913368051712
     channel = bot.get_channel(channel_id)
     await bot.tree.sync()
     activetrackfile.starttrackloop(bot)

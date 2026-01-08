@@ -36,7 +36,3 @@ samplecontrollerdescription = [
     "ATC feedback - vats.im/pac/helpdesk",
     "Extending WOL 125.0, BLA 132.2 and ARL 130.9"
     ]
-
-
-        
-
