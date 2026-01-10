@@ -119,9 +119,9 @@ def starttrackloop(bot):
                                     is_scottishcontrol = True
                                 elif foundartcc == "EGGX" or foundartcc == "CZQO":
                                     isshanwickganderoceanic = True
-                                elif foundartcc == "CZYZ":
-                                    # its czyz rn cuz to my knowledge other canadian FIRs use XXXX_CTR
+                                elif foundartcc[:4] in icaotoartcc["canada"]:
                                     iscanada = True
+                                    canada_CTR_callsign = icaotoartcc["canada"][foundartcc]["identifier"]
                                 # check if they're in an asian FIR as they start with different stuff
                                 elif foundartcc[:4] in icaotoartcc["specialasia"]:
                                     asiancallsign = True
@@ -216,9 +216,9 @@ def starttrackloop(bot):
                                     elif iscanada == True:
                                         foundartcc = foundartcc[:4]
                                         atccallsign = onlineatc["callsign"]
-                                        parsedcallsign = atccallsign[:3] + atccallsign[-4:]                                    
-                                        if icaotoartcc["canada"][foundartcc]["identifier"] == parsedcallsign:
-                                            message = f"<@{userid.id}>, your flight **{callsign}** is entering **{onlineatc["callsign"]}** - {icaotoartcc["canada"][foundartcc]["callsign"]}."
+                                        atc_callsign_parsed = atccallsign[:3] + atccallsign[-4:]
+                                        if atc_callsign_parsed == canada_CTR_callsign:
+                                            message = await controller_counter_function(canada_CTR_callsign, callsign, onlineatc, userid, False)
                                             await userid.send(message)
                                             artccappend = foundartcc[:4] 
                                             tracksdata[callsign]["pinged_artccs"].append(artccappend)
