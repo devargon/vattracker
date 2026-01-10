@@ -104,7 +104,9 @@
         "CZQO": {"identifier": "NAT_FSS", "callsign": "Gander Radio"}
     },
     "canada": {
-        "CZYZ": {"identifier": "TOR_CTR", "callsign": "Toronto Center"}
+        "CZYZ": {"identifier": "TOR_CTR", "callsign": "Toronto Center"},
+        "CZWG": {"identifier": "WPG_CTR", "callsign": "Winnipeg Center"},
+        "CZUL": {"identifier": "MTL_CTR", "callsign": "Montreal Center"}
     }
 }
 
