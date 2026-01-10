@@ -8,6 +8,7 @@ import logging
 from discord import app_commands
 from typing import Optional
 import activetrackfile
+import atcnotifyfile
 
 load_dotenv(".env")
 token = os.getenv("DISCORD_TOKEN")
@@ -21,6 +22,7 @@ intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="/", intents=intents)
 
 activetrackfile.activetrackcommand(bot)
+atcnotifyfile.atcnotifycommands(bot)
 
 @bot.event
 async def on_ready():
@@ -28,6 +30,7 @@ async def on_ready():
     channel = bot.get_channel(channel_id)
     await bot.tree.sync()
     activetrackfile.starttrackloop(bot)
+    atcnotifyfile.atcnotifyloop(bot)
     if channel:
         await channel.send("hello world! run /help to look for commands!")
     else:
