@@ -1,0 +1,125 @@
+import discord
+import requests
+import json
+from discord import app_commands
+from typing import Optional
+from discord.ext import tasks
+
+artccpolygons = {}
+with open("Boundaries.geojson", "r") as file:
+    raw_boundary_data = json.load(file)
+
+for feature in raw_boundary_data["features"]:
+    artccpolygons[feature["properties"]["id"]] = {
+        "identifier": feature["properties"]["id"]
+    }
+
+def atcnotifycommands(bot):
+
+    @bot.tree.command(name="atcnotify", description="DMs you when an ATC comes online. Optionally notify a channel.")
+    @app_commands.describe(input="Input a CALLSIGN of any ATC.")
+    async def atcnotify(interaction: discord.Interaction, input: str, channel_id: Optional[str] = None):
+        with open("currentnotifylist.json", "r") as file:
+            current_notify_list = json.load(file)
+        current_notify_list[str(interaction.user.id) + input] = {
+            "atc_id": input,
+            "user_id": interaction.user.id,
+            "channel_id": channel_id,
+            "pinged": False
+        }
+        if current_notify_list[str(interaction.user.id) + input]["channel_id"] == None:
+            success_embed = discord.Embed(title=f"Success! You will be DMed if {input} comes online.")
+        else:
+            success_embed = discord.Embed(title=f"Success! Your channel will be notified if {input} comes online.")
+        await interaction.response.send_message(embed=success_embed)
+        with open("currentnotifylist.json", "w") as file:
+            json.dump(current_notify_list, file)
+    
+    @bot.tree.command(name="removeatcnotify", description="Stop getting DMs/notifications if an ATC online.")
+    @app_commands.describe(input="Input a CALLSIGN of any ATC.")
+    async def removeatcnotify(interaction: discord.Interaction, input: str):
+        with open("currentnotifylist.json", "r") as file:
+            current_notify_list = json.load(file)
+            current_notify_list_copy = current_notify_list.copy()
+        parsed_key = str(interaction.user.id) + input
+        if parsed_key in current_notify_list:
+            del current_notify_list_copy[parsed_key]
+            success_embed = discord.Embed(title=f"Success! You will not get a DM/notification for {input}")
+            await interaction.response.send_message(embed=success_embed)
+        else:
+            failure_embed = discord.Embed(title=f"You did not run /atcnotify for {input}")
+            await interaction.response.send_message(embed=failure_embed)
+    
+def atcnotifyloop(bot):
+    @tasks.loop(seconds=15)
+    async def atcnotifyloop():
+        vatsim_data = fetch_vatsim_API()
+        with open("currentnotifylist.json", "r") as file:
+            current_notify_list = json.load(file)
+            current_notify_list_copy = current_notify_list.copy()
+
+        for key, item in current_notify_list.items():
+            try:
+                if item["pinged"] == True:
+                    pass
+                else:
+                    user_id = await bot.fetch_user(item["user_id"])
+
+                    for controller in vatsim_data["controllers"]:
+                        if controller["callsign"] == item["atc_id"]:
+                            if item["channel_id"] == None:
+                                message = f"<@{item["user_id"]}>, **{item["atc_id"]}** is online."
+                                await user_id.send(message)
+                                for key_copy, item in current_notify_list_copy.items():
+                                    if key_copy == key:
+                                        current_notify_list_copy[key]["pinged"] = True
+                                        write_to_json(current_notify_list_copy)
+
+                            else:
+                                channel = await bot.fetch_channel(item["channel_id"])
+                                message = f"**{item["atc_id"]}** is online."
+                                await channel.send(message)
+                                for key_copy, item in current_notify_list_copy.items():
+                                    if key_copy == key:
+                                        current_notify_list_copy[key]["pinged"] = True
+                                        write_to_json(current_notify_list_copy)
+
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                print(f"oop i broke {e}")
+
+    @tasks.loop(seconds=15)
+    async def pinged_false_loop():
+        vatsimdata = fetch_vatsim_API()
+        with open("currentnotifylist.json", "r") as file:
+            current_notify_list = json.load(file)
+            current_notify_list_copy = current_notify_list.copy()        
+        for key, item in current_notify_list.items():
+            try:
+                controller_online = False
+                for controller in vatsimdata["controllers"]:
+                    if controller["callsign"] == item["atc_id"]:
+                        controller_online = True
+                if controller_online == False:
+                    for key_copy, item_copy in current_notify_list_copy.items():
+                        if key_copy == key:
+                            current_notify_list_copy[key]["pinged"] = False
+                            write_to_json(current_notify_list_copy)
+
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                print(f"oop i broke {e}")
+
+    atcnotifyloop.start()
+    pinged_false_loop.start()
+        
+    def fetch_vatsim_API():
+        vatsimdata = requests.get("https://data.vatsim.net/v3/vatsim-data.json").json()
+        return vatsimdata
+    
+    def write_to_json(current_notify_list):
+        with open("currentnotifylist.json", "w") as file:
+            json.dump(current_notify_list, file)
+        

@@ -3,5 +3,9 @@ Note: currenttrackstemplate.json is meant to be empty, the code will populate an
 currenttracks.json
 ```
 before starting the program. This is to ensure that if you are pulling from github, no data in that json will be lost.
+Do the same for currentnotifylisttemplate.json. Rename it to
+```
+currentnotifylist.json
+```
 
-Development branch, expect bugs
+
