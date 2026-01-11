@@ -14,6 +14,9 @@ for feature in raw_boundary_data["features"]:
         "identifier": feature["properties"]["id"]
     }
 
+with open("icaotoartccfir.json", "r") as file:
+    icao_to_artccJSON = json.load(file)
+
 def atcnotifycommands(bot):
 
     @bot.tree.command(name="atcnotify", description="DMs you when an ATC comes online. Optionally notify a channel.")
@@ -22,7 +25,7 @@ def atcnotifycommands(bot):
         with open("currentnotifylist.json", "r") as file:
             current_notify_list = json.load(file)
         current_notify_list[str(interaction.user.id) + input] = {
-            "atc_id": input,
+            "atc_id": input.upper(),
             "user_id": interaction.user.id,
             "channel_id": channel_id,
             "pinged": False
@@ -66,9 +69,11 @@ def atcnotifyloop(bot):
                     user_id = await bot.fetch_user(item["user_id"])
 
                     for controller in vatsim_data["controllers"]:
-                        if controller["callsign"] == item["atc_id"]:
+                        item_callsignParsed = parse_controller_callsign(item["atc_id"])
+                        controller_callsignParsed = parse_controller_callsign(controller["callsign"])
+                        if controller_callsignParsed == item_callsignParsed:
                             if item["channel_id"] == None:
-                                message = f"<@{item["user_id"]}>, **{item["atc_id"]}** is online."
+                                message = f"<@{item["user_id"]}>, **{controller["callsign"]}** is online."
                                 await user_id.send(message)
                                 for key_copy, item in current_notify_list_copy.items():
                                     if key_copy == key:
@@ -77,7 +82,7 @@ def atcnotifyloop(bot):
 
                             else:
                                 channel = await bot.fetch_channel(item["channel_id"])
-                                message = f"**{item["atc_id"]}** is online."
+                                message = f"**{controller["callsign"]}** is online."
                                 await channel.send(message)
                                 for key_copy, item in current_notify_list_copy.items():
                                     if key_copy == key:
@@ -123,3 +128,7 @@ def atcnotifyloop(bot):
         with open("currentnotifylist.json", "w") as file:
             json.dump(current_notify_list, file)
         
+    def parse_controller_callsign(controller_callsign):
+        callsign_split = controller_callsign.split("_")
+        parsed_callsign = f"{callsign_split[0]}_{callsign_split[-1]}"
+        return parsed_callsign
