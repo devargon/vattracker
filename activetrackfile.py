@@ -8,6 +8,8 @@ import requests
 import parseaustraliasectors
 import aiohttp
 
+from utils import read_or_create_file
+
 guildid = 1397781715879071894
 Guild = discord.Object(id=guildid)
 
@@ -26,8 +28,7 @@ def activetrackcommand(bot):
 
     @bot.tree.command(name="activetrack", description="Tracks your aircraft on the network, and DMs you if entering an active ARTCC/FIR")
     async def activetrack(interaction: discord.Interaction, callsign: str):
-        with open("currenttracks.json", "r") as file:
-            currenttracks = json.load(file)
+        currenttracks = read_or_create_file("currenttracks.json")
         currenttracks[callsign.upper()] = {
             "discord_channel": interaction.channel_id,
             "user_id": interaction.user.id,
@@ -41,9 +42,8 @@ def activetrackcommand(bot):
     @bot.tree.command(name="removeactivetrack", description="Removes activetrack from an aircraft")
     async def removeactivetrack(interaction: discord.Interaction, callsign: str):
         aircraftexist = False
-        with open("currenttracks.json", "r") as file:
-            tracks = json.load(file)
-            tracks_copy = tracks.copy()
+        tracks = read_or_create_file("currenttracks.json")
+        tracks_copy = tracks.copy()
         userid = interaction.user.id
         if tracks[callsign.upper()]["user_id"] == userid:
             aircraftexist = True
@@ -61,8 +61,7 @@ def activetrackcommand(bot):
 def starttrackloop(bot):
     @tasks.loop(seconds=10)
     async def trackloop():
-        with open("currenttracks.json", "r") as file:
-            tracksdata = json.load(file)
+        tracksdata = read_or_create_file("currenttracks.json")
         
         vatsimdata = requests.get("https://data.vatsim.net/v3/vatsim-data.json").json()
 
@@ -265,9 +264,8 @@ def starttrackloop(bot):
     @tasks.loop(seconds=30)
     async def deletionloop():
         vatsimdata = requests.get("https://data.vatsim.net/v3/vatsim-data.json").json()
-        with open("currenttracks.json", "r") as file:
-            trackdata = json.load(file)
-            trackdata_copy = trackdata.copy()
+        trackdata = read_or_create_file("currenttracks.json")
+        trackdata_copy = trackdata.copy()
         for aircraft, items in trackdata.items():
             still_online = False
             for callsign in vatsimdata["pilots"]:

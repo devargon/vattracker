@@ -5,6 +5,8 @@ from discord import app_commands
 from typing import Optional
 from discord.ext import tasks
 
+from utils import read_or_create_file
+
 artccpolygons = {}
 with open("Boundaries.geojson", "r") as file:
     raw_boundary_data = json.load(file)
@@ -22,8 +24,7 @@ def atcnotifycommands(bot):
     @bot.tree.command(name="atcnotify", description="DMs you when an ATC comes online. Optionally notify a channel.")
     @app_commands.describe(input="Input a CALLSIGN of any ATC.")
     async def atcnotify(interaction: discord.Interaction, input: str, channel_id: Optional[str] = None):
-        with open("currentnotifylist.json", "r") as file:
-            current_notify_list = json.load(file)
+        current_notify_list = read_or_create_file("currentnotifylist.json")
         current_notify_list[str(interaction.user.id) + input] = {
             "atc_id": input.upper(),
             "user_id": interaction.user.id,
@@ -41,9 +42,8 @@ def atcnotifycommands(bot):
     @bot.tree.command(name="removeatcnotify", description="Stop getting DMs/notifications if an ATC online.")
     @app_commands.describe(input="Input a CALLSIGN of any ATC.")
     async def removeatcnotify(interaction: discord.Interaction, input: str):
-        with open("currentnotifylist.json", "r") as file:
-            current_notify_list = json.load(file)
-            current_notify_list_copy = current_notify_list.copy()
+        current_notify_list = read_or_create_file("currentnotifylist.json")
+        current_notify_list_copy = current_notify_list.copy()
         parsed_key = str(interaction.user.id) + input
         if parsed_key in current_notify_list:
             del current_notify_list_copy[parsed_key]
@@ -57,9 +57,8 @@ def atcnotifyloop(bot):
     @tasks.loop(seconds=15)
     async def atcnotifyloop():
         vatsim_data = fetch_vatsim_API()
-        with open("currentnotifylist.json", "r") as file:
-            current_notify_list = json.load(file)
-            current_notify_list_copy = current_notify_list.copy()
+        current_notify_list = read_or_create_file("currentnotifylist.json")
+        current_notify_list_copy = current_notify_list.copy()
 
         for key, item in current_notify_list.items():
             try:
@@ -97,9 +96,8 @@ def atcnotifyloop(bot):
     @tasks.loop(seconds=15)
     async def pinged_false_loop():
         vatsimdata = fetch_vatsim_API()
-        with open("currentnotifylist.json", "r") as file:
-            current_notify_list = json.load(file)
-            current_notify_list_copy = current_notify_list.copy()        
+        current_notify_list = read_or_create_file("currentnotifylist.json")
+        current_notify_list_copy = current_notify_list.copy()
         for key, item in current_notify_list.items():
             try:
                 controller_online = False
