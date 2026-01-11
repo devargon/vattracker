@@ -104,7 +104,9 @@ def atcnotifyloop(bot):
             try:
                 controller_online = False
                 for controller in vatsimdata["controllers"]:
-                    if controller["callsign"] == item["atc_id"]:
+                    controller_callsignParsed = parse_controller_callsign(controller["callsign"])
+                    item_callsignParsed = parse_controller_callsign(item["atc_id"])
+                    if controller_callsignParsed == item_callsignParsed:
                         controller_online = True
                 if controller_online == False:
                     for key_copy, item_copy in current_notify_list_copy.items():
