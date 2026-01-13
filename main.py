@@ -425,6 +425,5 @@ async def departureboard(interaction: discord.Interaction, airport: str):
         await interaction.response.send_message(embed=nodepartureembed)
         print(departures)
         return
-
-
+    
 bot.run(token)

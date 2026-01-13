@@ -2,6 +2,7 @@ import requests
 import discord
 from datetime import datetime,timezone
 import time
+import aiohttp
 
 ratingdata = {
     2: "S1",
@@ -44,9 +45,10 @@ def atcinfocommand(bot):
             failure_embed = discord.Embed(title=f"{controller_callsign} is not currently on the network.", colour=discord.Colour.dark_magenta())
             await interaction.response.send_message(embed=failure_embed)
 
-    
-    def fetch_vatsim_API():
-        vatsimdata = requests.get("https://data.vatsim.net/v3/vatsim-data.json").json()
+    async def fetch_vatsim_API():
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://data.vatsim.net/v3/vatsim-data.json") as response:
+                vatsimdata = response.json()
         return vatsimdata
     
     def convert_time(timestamp_raw):

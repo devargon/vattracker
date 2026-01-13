@@ -49,6 +49,8 @@ def atcnotifycommands(bot):
             del current_notify_list_copy[parsed_key]
             success_embed = discord.Embed(title=f"Success! You will not get a DM/notification for {input}")
             await interaction.response.send_message(embed=success_embed)
+            with open("currentnotifylist.json", "w") as file:
+                json.dump(current_notify_list_copy, file)
         else:
             failure_embed = discord.Embed(title=f"You did not run /atcnotify for {input}")
             await interaction.response.send_message(embed=failure_embed)
