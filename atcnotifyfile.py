@@ -4,6 +4,7 @@ import json
 from discord import app_commands
 from typing import Optional
 from discord.ext import tasks
+import aiohttp
 
 from utils import read_or_create_file
 
@@ -58,7 +59,7 @@ def atcnotifycommands(bot):
 def atcnotifyloop(bot):
     @tasks.loop(seconds=15)
     async def atcnotifyloop():
-        vatsim_data = fetch_vatsim_API()
+        vatsim_data = await fetch_vatsim_API()
         current_notify_list = read_or_create_file("currentnotifylist.json")
         current_notify_list_copy = current_notify_list.copy()
 
@@ -97,7 +98,7 @@ def atcnotifyloop(bot):
 
     @tasks.loop(seconds=15)
     async def pinged_false_loop():
-        vatsimdata = fetch_vatsim_API()
+        vatsimdata = await fetch_vatsim_API()
         current_notify_list = read_or_create_file("currentnotifylist.json")
         current_notify_list_copy = current_notify_list.copy()
         for key, item in current_notify_list.items():
@@ -122,8 +123,10 @@ def atcnotifyloop(bot):
     atcnotifyloop.start()
     pinged_false_loop.start()
         
-    def fetch_vatsim_API():
-        vatsimdata = requests.get("https://data.vatsim.net/v3/vatsim-data.json").json()
+    async def fetch_vatsim_API():
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://data.vatsim.net/v3/vatsim-data.json") as response:
+                vatsimdata = await response.json()
         return vatsimdata
     
     def write_to_json(current_notify_list):

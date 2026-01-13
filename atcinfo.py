@@ -19,7 +19,7 @@ def atcinfocommand(bot):
     @bot.tree.command(name="atcinfo", description="Shows information about a controller online on the VATSIM network")
     async def atcinfo(interaction: discord.Interaction,  controller_callsign: str):
         controller_callsign = controller_callsign.upper()
-        vatsimdata = fetch_vatsim_API()
+        vatsimdata = await fetch_vatsim_API()
         foundcontroller = None
         for controller in vatsimdata["controllers"]:
             if controller["callsign"] == controller_callsign:
@@ -27,7 +27,7 @@ def atcinfocommand(bot):
         if foundcontroller:
 
             if foundcontroller["name"] == str(foundcontroller["cid"]):
-                embed_description = foundcontroller["cid"] + f"(**{ratingdata[foundcontroller["rating"]]}**)"
+                embed_description = str(foundcontroller["cid"]) + f"(**{ratingdata[foundcontroller["rating"]]}**)"
             else:
                 embed_description = foundcontroller["name"] + f" - {str(foundcontroller["cid"])} (**{ratingdata[foundcontroller["rating"]]}**)"
 
@@ -38,7 +38,9 @@ def atcinfocommand(bot):
             online_time = convert_time(foundcontroller["logon_time"])
             info_embed.add_field(name="Time Online", value=f"**{online_time}** - Elapsed", inline=False)
 
-            info_embed.add_field(name="Text Atis", value=f"{foundcontroller["text_atis"]}", inline=False)
+            text_atis_raw = foundcontroller["text_atis"]
+            text_atis = "\n".join(text_atis_raw)
+            info_embed.add_field(name="Text Atis", value=f"{text_atis}", inline=False)
 
             await interaction.response.send_message(embed=info_embed)            
         else:
@@ -48,7 +50,7 @@ def atcinfocommand(bot):
     async def fetch_vatsim_API():
         async with aiohttp.ClientSession() as session:
             async with session.get("https://data.vatsim.net/v3/vatsim-data.json") as response:
-                vatsimdata = response.json()
+                vatsimdata = await response.json()
         return vatsimdata
     
     def convert_time(timestamp_raw):
