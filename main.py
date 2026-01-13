@@ -8,7 +8,8 @@ import logging
 from discord import app_commands
 from typing import Optional
 import activetrackfile
-import atcnotifyfile
+import atcnotifyfile as atcnotifyfile
+import atcinfo
 
 load_dotenv(".env")
 token = os.getenv("DISCORD_TOKEN")
@@ -23,6 +24,7 @@ bot = commands.Bot(command_prefix="/", intents=intents)
 
 activetrackfile.activetrackcommand(bot)
 atcnotifyfile.atcnotifycommands(bot)
+atcinfo.atcinfocommand(bot)
 
 @bot.event
 async def on_ready():
@@ -423,6 +425,5 @@ async def departureboard(interaction: discord.Interaction, airport: str):
         await interaction.response.send_message(embed=nodepartureembed)
         print(departures)
         return
-
-
+    
 bot.run(token)
