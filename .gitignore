@@ -5,4 +5,3 @@ __pycache__
 currenttracks.json
 .gitignoregi
 currentnotifylist.json
-departure_arrivalboard.py
