@@ -4,7 +4,7 @@ import aiohttp
 from discord import app_commands, ui
 
 def departure_arrival_board_commands(bot):
-    @bot.tree.command(name="departureboardnew", description="Show departures at an airport")
+    @bot.tree.command(name="departureboard", description="Show departures at an airport")
     @app_commands.describe(icao_code = "4-letter ICAO code")
     async def departureboard(interaction: discord.Interaction, icao_code: str):
         icao_code = icao_code.upper()
@@ -28,7 +28,7 @@ def departure_arrival_board_commands(bot):
             failure_embed = discord.Embed(title=f"No departures at {icao_code}")
             await interaction.response.send_message(embed=failure_embed)
 
-    @bot.tree.command(name="arrivalboardnew", description="Show arrivals at an airport")
+    @bot.tree.command(name="arrivalboard", description="Show arrivals at an airport")
     @app_commands.describe(icao_code = "4-letter ICAO code")
     async def departureboard(interaction: discord.Interaction, icao_code: str):
         icao_code = icao_code.upper()
@@ -235,7 +235,6 @@ def departure_arrival_board_commands(bot):
         async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
             if self.page_count != 3:
                 self.page_count += 1
-            print(self.containers[self.page_count])
             self.clear_items()
             self.add_item(self.containers[self.page_count])
 
