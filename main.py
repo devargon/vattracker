@@ -4,12 +4,14 @@ import asyncio
 from discord.ext import commands
 import os
 import requests
+import aiohttp
 import logging
-from discord import app_commands
+from discord import app_commands, ui
 from typing import Optional
 import activetrackfile
 import atcnotifyfile as atcnotifyfile
 import atcinfo
+import departure_arrivalboard
 
 load_dotenv(".env")
 token = os.getenv("DISCORD_TOKEN")
@@ -25,6 +27,7 @@ bot = commands.Bot(command_prefix="/", intents=intents)
 activetrackfile.activetrackcommand(bot)
 atcnotifyfile.atcnotifycommands(bot)
 atcinfo.atcinfocommand(bot)
+departure_arrivalboard.departure_arrival_board_commands(bot)
 
 @bot.event
 async def on_ready():
@@ -180,250 +183,4 @@ async def aircraftinfo(interaction: discord.Interaction, callsign:Optional[str] 
                 )
                 await interaction.response.send_message(embed=noaicraftembedcid)
 
-@bot.tree.command(name="arrivalboard", description="Show arrivals at an airport")
-async def arrivalboard(interaction: discord.Interaction, airport: str):
-    airport = airport.upper()
-    arrivalcounter = 0
-    if len(airport) > 4 or len(airport) < 4:
-
-        invalidembed = discord.Embed(
-            title=f"Invalid ICAO Code",
-            description=f"{airport} is not a valid ICAO code. Please input a **valid**, **4-letter** ICAO code.",
-            color=discord.Color.blue()
-        )
-        invalidembed.set_footer(text=f"Executed by {interaction.user}")
-        await interaction.response.send_message(embed=invalidembed)
-        return
-    else: 
-        
-        airportlist = requests.get("https://raw.githubusercontent.com/mwgg/Airports/refs/heads/master/airports.json")
-        airportlistdata = airportlist.json()
-        # get the list into a json variable
-
-        if airport.upper() not in airportlistdata:
-            unrealairportembed = discord.Embed(
-                title=f"{airport.upper()} is not a real airport.",
-                color=discord.Color.dark_blue()
-                )
-            unrealairportembed.set_footer(text=f"Executed by {interaction.user}")
-            await interaction.response.send_message(embed=unrealairportembed)
-            return
-       
-        if airport.upper() in airportlistdata:
-            foundairport = airportlistdata[airport.upper()]
-            airportname = foundairport.get("name", "Unknown Airport")
-
-        rawdata = requests.get('https://data.vatsim.net/v3/vatsim-data.json')
-        data = rawdata.json()
-        arrivals = []
-        # define the embeds
-        embed = discord.Embed(
-            title=f"{airport}'s Arrivals - Page 1",
-                description=f"Current arrivals at **{airport}** - {airportname}",
-                color=discord.Color.blue()
-        )
-        embed.set_footer(text=f"Executed by {interaction.user}")
-        embed2 = discord.Embed(
-            title=f"{airport}'s Arrivals - Page 2",
-                description=f"Current arrivals at **{airport}** - {airportname}",
-                color=discord.Color.blue()
-        )
-        embed2.set_footer(text=f"Page 2")
-        embed3 = discord.Embed(
-            title=f"{airport}'s Arrivals - Page 3",
-                description=f"Current arrivals at **{airport}** - {airportname}",
-                color=discord.Color.blue()
-        )
-        embed3.set_footer(text=f"Page 3")
-        embed4 = discord.Embed(
-            title=f"{airport}'s Arrivals - Page 4",
-                description=f"Current arrivals at **{airport}** - {airportname}",
-                color=discord.Color.blue()
-        )
-        # embed defining done
-
-        for pilot in data["pilots"]:
-            pilot_flightplan = pilot.get("flight_plan", None)
-            if pilot_flightplan is not None:
-                if airport.upper() == pilot_flightplan.get("arrival", ""):
-                    arrivals.append(pilot)
-        for pilot in arrivals:
-            callsigns = pilot.get("callsign", "")
-            departureairport = pilot.get("flight_plan").get("departure", "")
-            if arrivalcounter < 24:
-                embed.add_field(name=f"{callsigns}", value=f"{departureairport.upper()} - {airport.upper()}", inline=True)
-                arrivalcounter += 1
-            elif arrivalcounter < 48:
-                embed2.add_field(name=f"{callsigns}", value=f"{departureairport.upper()} - {airport.upper()}", inline=True)
-                arrivalcounter += 1
-            elif arrivalcounter < 72:
-                embed3.add_field(name=f"{callsigns}", value=f"{departureairport.upper()} - {airport.upper()}", inline=True)
-                arrivalcounter += 1
-            elif arrivalcounter < 96:
-                embed4.add_field(name=f"{callsigns}", value=f"{departureairport.upper()} - {airport.upper()}", inline=True)
-                arrivalcounter +=1
-            elif arrivalcounter >= 96:
-                break
-
-        if arrivals:
-            await interaction.response.send_message(embed=embed)
-
-            if arrivalcounter >= 24:
-                await interaction.followup.send(embed=embed2)
-            if arrivalcounter >= 48:
-                await interaction.followup.send(embed=embed3)
-            if arrivalcounter >= 72:
-                await interaction.followup.send(embed=embed4)
-            if arrivalcounter >= 96:
-                unshownarrivals = len(arrivals) - arrivalcounter
-                embed4.set_footer(text=f"{unshownarrivals} remaining flights are not shown - Page 4")
-                await interaction.followup.send(embed=embed4)
-            return
-        else:
-            noarrivalembed = discord.Embed(
-                        title=f"No current arrivals at {airport.upper()} - {airportname}",
-                            description=f"There are no arrivals at {airport.upper()}",
-                            color=discord.Color.dark_blue()
-                    )
-            noarrivalembed.set_footer(text=f"Executed by {interaction.user}")
-            await interaction.response.send_message(embed=noarrivalembed)
-            print(arrivals)
-            return
-
-@bot.tree.command(name="departureboard", description="Show current VATSIM departures from an airport")
-@app_commands.describe(airport="4-letter ICAO code")
-async def departureboard(interaction: discord.Interaction, airport: str):
-    airport = airport.upper()
-    departurecounter = 0
-
-    if len(airport) != 4:
-        invalidembed = discord.Embed(
-            title="Invalid ICAO Code",
-            description=f"{airport} is not a valid ICAO code. Please input a **valid**, **4-letter** ICAO code.",
-            color=discord.Color.blue()
-        )
-        invalidembed.set_footer(text=f"Executed by {interaction.user}")
-        await interaction.response.send_message(embed=invalidembed)
-        return
-
-    airportlist = requests.get(
-        "https://raw.githubusercontent.com/mwgg/Airports/refs/heads/master/airports.json"
-    )
-    airportlistdata = airportlist.json()
-
-    if airport.upper() not in airportlistdata:
-        unrealairportembed = discord.Embed(
-            title=f"{airport.upper()} is not a real airport.",
-            color=discord.Color.dark_blue()
-        )
-        unrealairportembed.set_footer(text=f"Executed by {interaction.user}")
-        await interaction.response.send_message(embed=unrealairportembed)
-        return
-
-    foundairport = airportlistdata[airport.upper()]
-    airportname = foundairport.get("name", "Unknown Airport")
-
-    rawdata = requests.get("https://data.vatsim.net/v3/vatsim-data.json")
-    data = rawdata.json()
-    departures = []
-
-    # define embeds
-    embed = discord.Embed(
-        title=f"{airport.upper()}'s Departures - Page 1",
-        description=f"Current departures from **{airport.upper()}** - {airportname}",
-        color=discord.Color.blue()
-    )
-    embed.set_footer(text=f"Executed by {interaction.user}")
-
-    embed2 = discord.Embed(
-        title=f"{airport.upper()}'s Departures - Page 2",
-        description=f"Current departures from **{airport.upper()}** - {airportname}",
-        color=discord.Color.blue()
-    )
-    embed2.set_footer(text="Page 2")
-
-    embed3 = discord.Embed(
-        title=f"{airport.upper()}'s Departures - Page 3",
-        description=f"Current departures from **{airport.upper()}** - {airportname}",
-        color=discord.Color.blue()
-    )
-    embed3.set_footer(text="Page 3")
-
-    embed4 = discord.Embed(
-        title=f"{airport.upper()}'s Departures - Page 4",
-        description=f"Current departures from **{airport.upper()}** - {airportname}",
-        color=discord.Color.blue()
-    )
-
-    # collect departures
-    for pilot in data["pilots"]:
-        pilot_flightplan = pilot.get("flight_plan", None)
-        if pilot_flightplan is not None:
-            if airport.upper() == pilot_flightplan.get("departure", ""):
-                departures.append(pilot)
-
-    for pilot in departures:
-        callsigns = pilot.get("callsign", "")
-        arrivalairport = pilot.get("flight_plan").get("arrival", "")
-
-        if departurecounter < 24:
-            embed.add_field(
-                name=callsigns,
-                value=f"{airport.upper()} - {arrivalairport.upper()}",
-                inline=True
-            )
-            departurecounter += 1
-        elif departurecounter < 48:
-            embed2.add_field(
-                name=callsigns,
-                value=f"{airport.upper()} - {arrivalairport.upper()}",
-                inline=True
-            )
-            departurecounter += 1
-        elif departurecounter < 72:
-            embed3.add_field(
-                name=callsigns,
-                value=f"{airport.upper()} - {arrivalairport.upper()}",
-                inline=True
-            )
-            departurecounter += 1
-        elif departurecounter < 96:
-            embed4.add_field(
-                name=callsigns,
-                value=f"{airport.upper()} - {arrivalairport.upper()}",
-                inline=True
-            )
-            departurecounter += 1
-        elif departurecounter >= 96:
-            break
-
-    if departures:
-        # first response
-        await interaction.response.send_message(embed=embed)
-
-        if len(departures) >= 24:
-            await interaction.followup.send(embed=embed2)
-        if len(departures) >= 48:
-            await interaction.followup.send(embed=embed3)
-        if len(departures) >= 72:
-            await interaction.followup.send(embed=embed4)
-
-        if len(departures) >= 97:
-            unshowndepartures = len(departures) - departurecounter
-            embed4.set_footer(
-                text=f"{unshowndepartures} remaining flights are not shown - Page 4"
-            )
-        return
-
-    else:
-        nodepartureembed = discord.Embed(
-            title=f"No current departures from {airport.upper()} - {airportname}",
-            description=f"There are no departures from {airport.upper()}",
-            color=discord.Color.dark_blue()
-        )
-        nodepartureembed.set_footer(text=f"Executed by {interaction.user}")
-        await interaction.response.send_message(embed=nodepartureembed)
-        print(departures)
-        return
-    
 bot.run(token)
