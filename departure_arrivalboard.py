@@ -30,7 +30,7 @@ def departure_arrival_board_commands(bot):
 
     @bot.tree.command(name="arrivalboard", description="Show arrivals at an airport")
     @app_commands.describe(icao_code = "4-letter ICAO code")
-    async def departureboard(interaction: discord.Interaction, icao_code: str):
+    async def arrivalboard(interaction: discord.Interaction, icao_code: str):
         icao_code = icao_code.upper()
         vatsimdata = await fetch_vatsim_api()
         airportname_database = await fetch_airportname_database()
@@ -77,147 +77,77 @@ def departure_arrival_board_commands(bot):
 
             pilot_counter = 0
 
-            self.container1 = ui.Container()
-            if self.is_for_departureBoard == True:
-                header = ui.TextDisplay(f"# {self.airportname_database[self.icao_code]["name"]} ({self.icao_code}) Departures")
-            else:
-                header = ui.TextDisplay(f"# {self.airportname_database[self.icao_code]["name"]} ({self.icao_code}) Arrivals")
-            self.container1.add_item(header)
+            first_container_sent = False
 
-            self.container2 = ui.Container()
-            if self.is_for_departureBoard == True:
-                header = ui.TextDisplay(f"# {self.airportname_database[self.icao_code]["name"]} ({self.icao_code}) Departures - Page 2")
-            else:
-                header = ui.TextDisplay(f"# {self.airportname_database[self.icao_code]["name"]} ({self.icao_code}) Arrivals - Page 2")
-            self.container2.add_item(header)
+            page_counter_forContainers = 1
 
-            self.container3 = ui.Container()
+            self.containers = [] # we will add to this later
+            
+            
+            # create first container
+            container = ui.Container()
             if self.is_for_departureBoard == True:
-                header = ui.TextDisplay(f"# {self.airportname_database[self.icao_code]["name"]} ({self.icao_code}) Departures - Page 3")
+                header = ui.TextDisplay(f"# {self.airportname_database[self.icao_code]["name"]} ({self.icao_code}) Departures - Page {page_counter_forContainers}")
             else:
-                header = ui.TextDisplay(f"# {self.airportname_database[self.icao_code]["name"]} ({self.icao_code}) Arrivals - Page 3")
-            self.container3.add_item(header)
-
-            self.container4 = ui.Container()
-            if self.is_for_departureBoard == True:
-                header = ui.TextDisplay(f"# {self.airportname_database[self.icao_code]["name"]} ({self.icao_code}) Departures - Page 4")
-            else:
-                header = ui.TextDisplay(f"# {self.airportname_database[self.icao_code]["name"]} ({self.icao_code}) Arrivals - Page 4")
-            self.container4.add_item(header)
-
-            self.containers = [
-                self.container1,
-                self.container2,
-                self.container3,
-                self.container4
-            ]
+                header = ui.TextDisplay(f"# {self.airportname_database[self.icao_code]["name"]} ({self.icao_code}) Arrivals - Page {page_counter_forContainers}")
+            container.add_item(header)
 
             for pilot in self.pilot_list:
                 if self.is_for_departureBoard == True:
-                    # convert icaocode to departure mode (versatility)
+                # convert icaocode to departure mode (versatility)
                     pilot_arrivalICAO = pilot["flight_plan"]["arrival"]
-                    self.icao_code = pilot_arrivalICAO
+                    pilot_target_icao_code = pilot_arrivalICAO
                 if self.is_for_departureBoard == False:
                     # convert icaocode to arrival mode
                     pilot_arrivalICAO = pilot["flight_plan"]["departure"]
-                    self.icao_code = pilot_arrivalICAO
+                    pilot_target_icao_code = pilot_arrivalICAO
 
                 button_label = f"{pilot.get("callsign")}"
-                if pilot_counter <= 8:
-                    if self.is_for_departureBoard == True:
-                        self.container1.add_item(
-                            ui.Section(
-                                ui.TextDisplay(
-                                    f"### {pilot.get("callsign")} - {str(pilot.get("cid"))} \n-# Departing to {self.airportname_database.get(self.icao_code, {}).get("name")}"
-                                ),
-                                accessory = ui.Button(label=button_label, url=f"https://vatsim-radar.com/?pilot={pilot.get("cid")}")
-                            )
-                        )
-                        pilot_counter += 1
-                    elif self.is_for_departureBoard == False:
-                        self.container1.add_item(
-                            ui.Section(
-                                ui.TextDisplay(
-                                    f"### {pilot.get("callsign")} - {str(pilot.get("cid"))} \n-# From {self.airportname_database.get(self.icao_code, {}).get("name")}"
-                                ),
-                                accessory = ui.Button(label=button_label, url=f"https://vatsim-radar.com/?pilot={pilot.get("cid")}")
-                            )
-                        )
-                        pilot_counter += 1
-                elif pilot_counter <= 16:
-                    if self.is_for_departureBoard == True:
-                        self.container2.add_item(
-                            ui.Section(
-                                ui.TextDisplay(
-                                    f"### {pilot.get("callsign")} - {str(pilot.get("cid"))} \n-# Departing to {self.airportname_database.get(self.icao_code, {}).get("name")}"
-                                ),
-                                accessory = ui.Button(label=button_label, url=f"https://vatsim-radar.com/?pilot={pilot.get("cid")}")
-                            )
-                        )
-                        pilot_counter += 1
-                    elif self.is_for_departureBoard == False:
-                        self.container2.add_item(
-                            ui.Section(
-                                ui.TextDisplay(
-                                    f"### {pilot.get("callsign")} - {str(pilot.get("cid"))} \n-# From {self.airportname_database.get(self.icao_code, {}).get("name")}"
-                                ),
-                                accessory = ui.Button(label=button_label, url=f"https://vatsim-radar.com/?pilot={pilot.get("cid")}")
-                            )
-                        )
-                        pilot_counter += 1
-                elif pilot_counter <= 24:
-                    if self.is_for_departureBoard == True:
-                        self.container3.add_item(
-                            ui.Section(
-                                ui.TextDisplay(
-                                    f"### {pilot.get("callsign")} - {str(pilot.get("cid"))} \n-# Departing to {self.airportname_database.get(self.icao_code, {}).get("name")}"
-                                ),
-                                accessory = ui.Button(label=button_label, url=f"https://vatsim-radar.com/?pilot={pilot.get("cid")}")
-                            )
-                        )
-                        pilot_counter += 1
-                    elif self.is_for_departureBoard == False:
-                        self.container3.add_item(
-                            ui.Section(
-                                ui.TextDisplay(
-                                    f"### {pilot.get("callsign")} - {str(pilot.get("cid"))} \n-# From {self.airportname_database.get(self.icao_code, {}).get("name")}"
-                                ),
-                                accessory = ui.Button(label=button_label, url=f"https://vatsim-radar.com/?pilot={pilot.get("cid")}")
-                            )
-                        )
-                        pilot_counter += 1   
-                elif pilot_counter <= 32:
-                    if self.is_for_departureBoard == True:
-                        self.container4.add_item(
-                            ui.Section(
-                                ui.TextDisplay(
-                                    f"### {pilot.get("callsign")} - {str(pilot.get("cid"))} \n-# Departing to {self.airportname_database.get(self.icao_code, {}).get("name")}"
-                                ),
-                                accessory = ui.Button(label=button_label, url=f"https://vatsim-radar.com/?pilot={pilot.get("cid")}")
-                            )
-                        )
-                        pilot_counter += 1
-                    elif self.is_for_departureBoard == False:
-                        self.container4.add_item(
-                            ui.Section(
-                                ui.TextDisplay(
-                                    f"### {pilot.get("callsign")} - {str(pilot.get("cid"))} \n-# From {self.airportname_database.get(self.icao_code, {}).get("name")}"
-                                ),
-                                accessory = ui.Button(label=button_label, url=f"https://vatsim-radar.com/?pilot={pilot.get("cid")}")
-                            )
-                        )
-                        pilot_counter += 1
-                elif pilot_counter > 32:
-                    pilot_counter += 1
-            remaining_pilots = pilot_counter - 32
-            self.container4.add_item(
-                    ui.TextDisplay(
-                        f"-# {remaining_pilots} pilots are not shown here"
-                    )
-                # i have no idea whats going on :)
-            )            
 
-            self.add_item(self.container1)    
+                if self.is_for_departureBoard == True:
+                    container.add_item( # rat
+                        ui.Section(  
+                            ui.TextDisplay(
+                                f"### {pilot.get("callsign")} - {str(pilot.get("cid"))} \n-# Departing to {self.airportname_database.get(pilot_target_icao_code, {}).get("name")}"
+                            ),
+                            accessory = ui.Button(label=button_label, url=f"https://vatsim-radar.com/?pilot={pilot.get("cid")}")
+                        )
+                    )
+                    
+                elif self.is_for_departureBoard == False:
+                    container.add_item(
+                        ui.Section(
+                            ui.TextDisplay(
+                                f"### {pilot.get("callsign")} - {str(pilot.get("cid"))} \n-# From {self.airportname_database.get(pilot_target_icao_code, {}).get("name")}"
+                            ),
+                            accessory = ui.Button(label=button_label, url=f"https://vatsim-radar.com/?pilot={pilot.get("cid")}")
+                        )
+                    )
+
+                pilot_counter += 1
+                
+                if pilot_counter == 8:
+                    # 8 pilots are already added to a container
+
+                    pilot_counter = 0
+                    self.containers.append(container)
+                    page_counter_forContainers += 1   # add the first container to be messaged
+
+                    if first_container_sent == False:
+                        self.add_item(self.containers[0]) 
+                        first_container_sent = True
+
+                    container = ui.Container()
+                    if self.is_for_departureBoard == True:
+                        header = ui.TextDisplay(f"# {self.airportname_database[self.icao_code]["name"]} ({self.icao_code}) Departures - Page {page_counter_forContainers}")
+                    else:
+                        header = ui.TextDisplay(f"# {self.airportname_database[self.icao_code]["name"]} ({self.icao_code}) Arrivals - Page {page_counter_forContainers}")
+                    container.add_item(header)
+            # when the code reaches here, that means it has looped through all pilots. 
+            # at this stage, the container may have 0 pilots or up to 8 pilots (the remainder). 
+            if pilot_counter > 0:
+                # only add the container if we had added pilots into it for the last couple pilots that dont reach 8
+                self.containers.append(container)
 
         row = ui.ActionRow()
 
